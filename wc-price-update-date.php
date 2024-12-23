@@ -9,7 +9,6 @@
  * License: GPL v3
  */
 
-// Exit if accessed directly.
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -36,7 +35,7 @@ function wc_add_price_update_date_settings($settings, $current_section) {
                 'desc'     => __('Set the color of the "Updated on" text.', 'wc-price-update-date'),
                 'id'       => 'wc_price_update_date_color',
                 'type'     => 'color',
-                'default'  => '#FF0000', // Default red color.
+                'default'  => '#FF0000', 
                 'desc_tip' => true,
             ],
             [
@@ -48,21 +47,21 @@ function wc_add_price_update_date_settings($settings, $current_section) {
     return $settings;
 }
 
-// Hook to display the updated date after the price.
+
 add_filter('woocommerce_get_price_html', 'wc_add_price_update_date', 10, 2);
 function wc_add_price_update_date($price, $product) {
-    // Ensure this is a single product page.
+  
     if (!is_product()) {
         return $price;
     }
 
-    // Get the last modified date of the product post.
+  
     $updated_date = get_the_modified_date('d/m/Y', $product->get_id());
 
-    // Get the color setting from WooCommerce settings.
-    $color = get_option('wc_price_update_date_color', '#FF0000'); // Default red color.
+   
+    $color = get_option('wc_price_update_date_color', '#FF0000'); 
 
-    // Append the updated date to the price with the selected color and smaller text size.
+   
     $price .= '<br><small style="display:block; color: ' . esc_attr($color) . '; font-size: 12px;">Updated on ' . esc_html($updated_date) . '</small>';
 
     return $price;
