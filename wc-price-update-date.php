@@ -3,7 +3,7 @@
  * Plugin Name: WooCommerce Price Update Date
  * Plugin URI: https://github.com/hypercircletech/WooCommerce-Price-Update-Date
  * Description: Displays the last updated date of a WooCommerce product after the price.
- * Version: 1.4.0
+ * Version: 1.5.0
  * Author: Hypercircle Technology
  * Author URI: https://hypercircle.tech
  * License: GPL v3
