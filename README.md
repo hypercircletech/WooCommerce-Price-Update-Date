@@ -33,8 +33,8 @@ Updated on 24/12/2024
 
 ## Author
 
-[Hypercircle Technology](https://github.com/hypercircletech/)
-[Rownok Ahmed](https://github.com/rownok860/)
+- [Hypercircle Technology](https://github.com/hypercircletech/)
+- [Rownok Ahmed](https://github.com/rownok860/)
 
 ## License
 
