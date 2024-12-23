@@ -1,112 +1,69 @@
 <?php
 /**
  * Plugin Name: WooCommerce Price Update Date
- * Plugin URI: https://github.com/hypercircletech/WooCommerce-Price-Update-Date
- * Description: Displays the last updated date of a WooCommerce product after the price.
- * Version: 1.5.0
+ * Plugin URI: https://hypercircle.tech
+ * Description: Displays the last updated date after the price on WooCommerce product pages with customizable color from the dashboard.
+ * Version: 1.3.0
  * Author: Hypercircle Technology
  * Author URI: https://hypercircle.tech
  * License: GPL v3
- * Text Domain: wc-price-update-date
- * Domain Path: /languages
  */
 
-if (!defined('ABSPATH')) exit;
-
-add_action('woocommerce_single_product_summary', 'wc_price_update_date_display', 25);
-
-function wc_price_update_date_display() {
-    global $product;
-    $updated_date = get_post_modified_time('d/m/Y', false, $product->get_id());
-    echo '<p style="color: #FF0000; font-size: 12px;">Updated on ' . $updated_date . '</p>';
+// Exit if accessed directly.
+if (!defined('ABSPATH')) {
+    exit;
 }
 
-if (is_admin()) {
-    add_filter('woocommerce_get_settings_products', 'wc_price_update_date_settings', 10, 2);
+// Add the color setting to WooCommerce settings.
+add_filter('woocommerce_get_sections_products', 'wc_add_price_update_date_section');
+function wc_add_price_update_date_section($sections) {
+    $sections['price_update_date'] = __('Price Update Date', 'wc-price-update-date');
+    return $sections;
 }
 
-function wc_price_update_date_settings($settings, $current_section) {
+add_filter('woocommerce_get_settings_products', 'wc_add_price_update_date_settings', 10, 2);
+function wc_add_price_update_date_settings($settings, $current_section) {
     if ($current_section === 'price_update_date') {
         $settings = [
             [
-                'title' => 'Price Update Date Settings',
-                'type' => 'title',
-                'desc' => 'Customize settings for the price update date display.',
-                'id' => 'price_update_date_settings',
+                'title' => __('Price Update Date Settings', 'wc-price-update-date'),
+                'type'  => 'title',
+                'desc'  => __('Customize the display of the price update date.', 'wc-price-update-date'),
+                'id'    => 'price_update_date_settings',
             ],
             [
-                'title' => 'Text Color',
-                'desc' => 'Choose the color of the update date text.',
-                'id' => 'price_update_date_color',
-                'type' => 'color',
-                'default' => '#FF0000',
-                'css' => 'width: 70px;',
+                'title'    => __('Text Color', 'wc-price-update-date'),
+                'desc'     => __('Set the color of the "Updated on" text.', 'wc-price-update-date'),
+                'id'       => 'wc_price_update_date_color',
+                'type'     => 'color',
+                'default'  => '#FF0000', // Default red color.
+                'desc_tip' => true,
             ],
             [
                 'type' => 'sectionend',
-                'id' => 'price_update_date_settings',
+                'id'   => 'price_update_date_settings',
             ],
         ];
     }
     return $settings;
 }
 
-function wc_price_update_date_update_color() {
-    $color = get_option('price_update_date_color', '#FF0000');
-    echo '<style>.woocommerce div.product p { color: ' . esc_attr($color) . '; }</style>';
-}
-add_action('wp_head', 'wc_price_update_date_update_color');
-
-if (!class_exists('WC_Price_Update_Date_Updater')) {
-    class WC_Price_Update_Date_Updater {
-        private $api_url = 'https://plugin.hypercircle.tech/wc-price-update-date/metadata.json';
-        private $plugin_file;
-
-        public function __construct($plugin_file) {
-            $this->plugin_file = $plugin_file;
-            add_filter('pre_set_site_transient_update_plugins', [$this, 'check_for_update']);
-            add_filter('plugins_api', [$this, 'plugin_info'], 10, 3);
-        }
-
-        public function check_for_update($transient) {
-            if (empty($transient->checked)) return $transient;
-            $plugin_data = get_plugin_data($this->plugin_file);
-            $plugin_slug = plugin_basename($this->plugin_file);
-            $response = wp_remote_get($this->api_url);
-            if (is_wp_error($response)) return $transient;
-            $data = json_decode(wp_remote_retrieve_body($response));
-            if (empty($data)) return $transient;
-            if (version_compare($plugin_data['Version'], $data->version, '<')) {
-                $transient->response[$plugin_slug] = (object) [
-                    'slug' => $plugin_slug,
-                    'new_version' => $data->version,
-                    'url' => $data->download_url,
-                    'package' => $data->download_url,
-                ];
-            }
-            return $transient;
-        }
-
-        public function plugin_info($res, $action, $args) {
-            if ($action !== 'plugin_information') return $res;
-            if ($args->slug !== plugin_basename($this->plugin_file)) return $res;
-            $response = wp_remote_get($this->api_url);
-            if (is_wp_error($response)) return $res;
-            $data = json_decode(wp_remote_retrieve_body($response));
-            if (empty($data)) return $res;
-            $res = (object) [
-                'name' => 'WooCommerce Price Update Date',
-                'slug' => plugin_basename($this->plugin_file),
-                'version' => $data->version,
-                'author' => '<a href="https://hypercircle.tech">Hypercircle Technology</a>',
-                'homepage' => 'https://plugin.hypercircle.tech/wc-price-update-date/',
-                'download_link' => $data->download_url,
-                'sections' => [
-                    'description' => 'Displays the last updated date of a WooCommerce product after the price.',
-                ],
-            ];
-            return $res;
-        }
+// Hook to display the updated date after the price.
+add_filter('woocommerce_get_price_html', 'wc_add_price_update_date', 10, 2);
+function wc_add_price_update_date($price, $product) {
+    // Ensure this is a single product page.
+    if (!is_product()) {
+        return $price;
     }
-    new WC_Price_Update_Date_Updater(__FILE__);
+
+    // Get the last modified date of the product post.
+    $updated_date = get_the_modified_date('d/m/Y', $product->get_id());
+
+    // Get the color setting from WooCommerce settings.
+    $color = get_option('wc_price_update_date_color', '#FF0000'); // Default red color.
+
+    // Append the updated date to the price with the selected color and smaller text size.
+    $price .= '<br><small style="display:block; color: ' . esc_attr($color) . '; font-size: 12px;">Updated on ' . esc_html($updated_date) . '</small>';
+
+    return $price;
 }
